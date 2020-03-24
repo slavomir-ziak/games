@@ -1,311 +1,387 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<style>
-canvas {
-    border:1px solid #d3d3d3;
-    background-color: #f1f1f1;
-}
-body {
-    background-color: black;
-}
-</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <style>
+        canvas {
+            border: 1px solid #d3d3d3;
+            background-color: #f1f1f1;
+        }
+
+        body {
+            background-color: black;
+        }
+    </style>
 </head>
-<body onload="startGame()">
+<body onload="start()">
 <script>
 
-/*
+    /*
 
-*) choice - 1P, 2P
-*) levels
-*) splash screen
-*) ball trail 
-*) 
+    *) choice - 1P, 2P
+    *) sounds
+    *) splash screen
+    *) ball trail
+    *)
 
-*/
+    */
 
-// 1 = human vs pc
-// 2 = human vs human
-var players = 1; 
+    // 1 = human vs pc
+    // 2 = human vs human
+    var players = 1;
 
-var level = {
-    computerStrength: 0.8,
-    barShorteningRate: 0.99,
-    barShorteningAfter: 1
-}
 
-var rightBar;
-var leftBar
-var ball;
+    var rightBar;
+    var leftBar;
+    var ball;
+    var level;
 
-function startGame() {
-    myGameArea.start();
-    
-    var width = 10;
+    function start() {
 
-    leftBar = new bar(10, myGameArea.canvas.height/4, "black", 0, 100, true);
-    rightBar = new bar(10, myGameArea.canvas.height/4, "black", myGameArea.canvas.width - width, 100, false);
-    
-    ball = new ball(5, "#000000", myGameArea.canvas.width/2, myGameArea.canvas.height/2);
-    
-}
+        myGameArea.init();
+        myGameArea.choosePlayers();
 
-var myGameArea = {
-    canvas : document.createElement("canvas"),
-    start : function() {
-        this.canvas.width = 480;
-        this.canvas.height = 270;
-        this.context = this.canvas.getContext("2d");
-        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
-        this.frameNo = 0;
-        this.interval = setInterval(updateGameArea, 1000/60);
+    }
+
+    var myGameArea = {
+
+        canvas: document.createElement("canvas"),
+
+        init: function () {
+            this.canvas.width = 480;
+            this.canvas.height = 270;
+            this.context = this.canvas.getContext("2d");
+            document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+            this.frameNo = 0;
+
         },
-    clear : function() {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        clear: function () {
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        },
+
+        startGame: function () {
+
+            var width = 10;
+            leftBar = new bar(10, myGameArea.canvas.height / 4, "black", 0, 100, true);
+            rightBar = new bar(10, myGameArea.canvas.height / 4, "black", myGameArea.canvas.width - width, 100, false);
+            ball = new ball(5, "#000000", myGameArea.canvas.width / 2, myGameArea.canvas.height / 2);
+            level = new level(myGameArea.canvas.width / 2 - 50, 40, "black", "30px", "Consolas");
+
+            this.interval = setInterval(updateGameArea, 1000 / 60);
+        },
+
+        choosePlayers: function () {
+            // TODO choose human or computer opponent
+            this.startGame();
+        },
+
+    };
+
+    function level(x, y, fontColor, size, font) {
+        this.levels = [
+            {
+                computerStrength: 0.3,
+                barShorteningRate: 1,
+                barShorteningAfter: 1
+            },
+            {
+                computerStrength: 0.5,
+                barShorteningRate: 1,
+                barShorteningAfter: 1
+            },
+            {
+                computerStrength: 0.7,
+                barShorteningRate: 0.8,
+                barShorteningAfter: 3
+            }
+        ];
+        this.level = 0;
+        this.scorePerLevel = 10;
+        this.wonTheGame = false;
+        this.computerStrength = this.levels[this.level].computerStrength;
+        this.barShorteningRate = this.levels[this.level].barShorteningRate;
+        this.barShorteningAfter = this.levels[this.level].barShorteningAfter;
+        this.isAfterLastLevel = function () {
+            return this.level >= this.levels.length;
+        };
+        this.isLastLevel = function () {
+            return this.level === this.levels.length - 1;
+        };
+        this.scoreChanged = function (score, isLeftPlayer) {
+
+            if (score === this.scorePerLevel) {
+
+                this.level++;
+                rightBar.resetScore();
+                leftBar.resetScore();
+
+                if (this.isAfterLastLevel()) {
+                    this.wonTheGame = players === 1 && !isLeftPlayer ? "You WON ! ! !" : "You LOST ! ! !";
+                } else {
+                    this.computerStrength = this.levels[this.level].computerStrength;
+                    this.barShorteningRate = this.levels[this.level].barShorteningRate;
+                    this.barShorteningAfter = this.levels[this.level].barShorteningAfter;
+                }
+            }
+        };
+        this.getLevelLabel = function(){
+            return this.isLastLevel() ? "Last level!" :  "Level: " + (this.level + 1);
+        };
+        this.paint = function (paintingContext) {
+            paintingContext.font = size + " " + font;
+            paintingContext.fillStyle = fontColor;
+            if (this.wonTheGame) {
+                paintingContext.fillText(this.wonTheGame, x - 40, y);
+            } else {
+                paintingContext.fillText(this.getLevelLabel(), x, y);
+            }
+
+        }
     }
-}
 
-function text(size, font, color, x, y) {
-    this.value = 0;
+    function text(size, fontColor, color, x, y) {
+        this.value = 0;
 
-    this.paint = function() {
-        ctx = myGameArea.context;
-        ctx.font = size + " " + font;
-        ctx.fillStyle = color;
-        ctx.fillText(this.value, x, y);
+        this.paint = function (paintingContext) {
+            paintingContext.font = size + " " + fontColor;
+            paintingContext.fillStyle = color;
+            paintingContext.fillText(this.value, x, y);
+        }
     }
-}
 
-function ball(radius, color, x, y) {
- 	this.radius = radius;
-    this.color = color;
-    this.x = x;
-    this.y = y;
-    this.dx = 2;
-    this.dy = 2;
-
-    this.restart = function() {
-        this.x = myGameArea.canvas.width/2;
-        this.y = myGameArea.canvas.height/2;
+    function ball(radius, color, x, y) {
+        this.radius = radius;
+        this.color = color;
+        this.x = x;
+        this.y = y;
         this.dx = 2;
         this.dy = 2;
-        rightBar.setOriginalHeight();
-        leftBar.setOriginalHeight();
-    }
-    
-    this.paint = function() {
-        ctx = myGameArea.context;
-        
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-        ctx.fill();
-    }
 
-    this.move = function() {
-        this.x = this.x + this.dx;
-        this.y = this.y + this.dy;
-    }
+        this.restart = function () {
+            this.x = myGameArea.canvas.width / 2;
+            this.y = myGameArea.canvas.height / 2;
+            this.dx = 2;
+            this.dy = 2;
+            rightBar.setOriginalHeight();
+            leftBar.setOriginalHeight();
+        };
 
-    this.collide = function() {
+        this.paint = function (paintingContext) {
+            paintingContext.fillStyle = this.color;
+            paintingContext.beginPath();
+            paintingContext.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+            paintingContext.fill();
+        };
 
-        if (this.x >= myGameArea.canvas.width) {
-            this.restart();
-            leftBar.increaseScore();
-            return;
-        }
+        this.move = function () {
+            this.x = this.x + this.dx;
+            this.y = this.y + this.dy;
+        };
 
-        if (this.x <= 0) {
-            this.restart();
-            rightBar.increaseScore();
-            return;
-        }
+        this.collide = function () {
 
-        // right bar - always controlled by human
-        if (this.x + this.radius >= rightBar.x 
-            && this.y >= rightBar.y 
-            && this.y <= rightBar.y + rightBar.height
-            && this.dx > 0) {
+            if (this.x >= myGameArea.canvas.width) {
+                this.restart();
+                leftBar.increaseScore();
+                return;
+            }
 
-            this.dx = this.dx * -1;
+            if (this.x <= 0) {
+                this.restart();
+                rightBar.increaseScore();
+                return;
+            }
 
-            if (keys["ArrowUp"] || keys["ArrowDown"]) {
-                this.dx--;
-                this.setDirection();
-                if (this.dx % level.barShorteningAfter === 0) {
-                    rightBar.shorten();
+            // right bar - always controlled by human
+            if (this.x + this.radius >= rightBar.x
+                && this.y >= rightBar.y
+                && this.y <= rightBar.y + rightBar.height
+                && this.dx > 0) {
+
+                this.dx = this.dx * -1;
+
+                if (keys["ArrowUp"] || keys["ArrowDown"]) {
+                    this.dx--;
+                    this.setDirection();
+                    if (this.dx % level.barShorteningAfter === 0) {
+                        rightBar.shorten();
+                    }
+
+                }
+
+            }
+            // left bar -
+            else if (this.x - this.radius <= leftBar.x + leftBar.width
+                && this.y >= leftBar.y
+                && this.y <= leftBar.y + leftBar.height
+                && this.dx < 0) {
+
+                this.dx = this.dx * -1;
+
+                if (players === 2 && (keys["KeyW"] || keys["KeyS"])) {
+                    this.dx++;
+                    this.setDirection();
+                    if (this.dx % level.barShorteningAfter === 0) {
+                        leftBar.shorten();
+                    }
+                }
+
+            } else if (this.y - this.radius <= 0) {
+                this.dy = this.dy * -1;
+            } else if (this.y + this.radius >= myGameArea.canvas.height) {
+                this.dy = this.dy * -1;
+                console.log('ball is at bottom', this.y)
+            }
+
+        };
+
+        this.setDirection = function () {
+
+            if (Math.random() > 0.8) {
+
+                if (this.dy >= 0) {
+                    this.dy = this.dy + 1;
+
+                }
+                if (this.dy <= 0) {
+                    this.dy = this.dy - 1;
+                }
+            }
+
+            if (Math.random() > 0.2) {
+                if (this.dy > 0 && keys["ArrowUp"]) {
+                    this.dy = this.dy * -1;
+
+                }
+                if (this.dy < 0 && keys["ArrowDown"]) {
+                    this.dy = this.dy * -1;
                 }
 
             }
 
         }
-        // left bar - 
-        else if (this.x - this.radius <= leftBar.x + leftBar.width 
-            && this.y >= leftBar.y 
-            && this.y <= leftBar.y + leftBar.height
-            && this.dx < 0) {
-
-            this.dx = this.dx * -1;
-
-            if (players === 2 && (keys["KeyW"] || keys["KeyS"])) {
-                this.dx++;
-                this.setDirection();
-                if (this.dx % level.barShorteningAfter === 0) {
-                    leftBar.shorten();
-                }
-            }
-
-        } else if (this.y - this.radius <= 0) {
-            this.dy = this.dy * -1;
-        } else if (this.y + this.radius >= myGameArea.canvas.height) {
-            this.dy = this.dy * -1;
-            console.log('ball is at bottom', this.y)
-        } 
-           
     }
 
-    this.setDirection = function() {
 
-        if (Math.random() > 0.8) {
+    function bar(width, height, color, x, y, isLeft) {
+        this.width = width;
+        this.height = height;
+        this.x = x;
+        this.y = y;
+        this.originalHeight = height;
+        this.score = new text("30px", "Consolas", "black", isLeft ? x + 10 : x - 20, 40);
 
-            if (this.dy >= 0) {
-                this.dy = this.dy + 1;
-                
+        this.paint = function (paintingContext) {
+            paintingContext.fillStyle = color;
+            paintingContext.fillRect(this.x, this.y, this.width, this.height);
+            this.score.paint(paintingContext);
+
+        };
+
+        this.goUp = function () {
+            if (this.y > 0) {
+                this.y = this.y - 5;
             }
-            if (this.dy <= 0) {
-                this.dy = this.dy - 1;
+        };
+
+        this.goDown = function () {
+            if (this.y < (myGameArea.canvas.height - this.height)) {
+                this.y = this.y + 5;
             }
+        };
+
+        this.shorten = function () {
+            this.height = this.height * level.barShorteningRate;
+        };
+
+        this.setOriginalHeight = function () {
+            this.height = this.originalHeight;
+        };
+
+        this.increaseScore = function () {
+            this.score.value++;
+            level.scoreChanged(this.score.value, isLeft);
+        };
+
+        this.resetScore = function () {
+            this.score.value = 0;
+        };
+
+    }
+
+    function updateGameArea() {
+
+        if (players === 1) {
+            moveByComputer();
+            moveRightBarByKeyboard();
+        } else {
+            moveRightBarByKeyboard();
+            moveLeftBarByKeyboard();
         }
 
-        if (Math.random() > 0.2) {
-            if (this.dy > 0 && keys["ArrowUp"]) {
-                this.dy = this.dy * -1;
-                
-            }
-            if (this.dy < 0 && keys["ArrowDown"]) {
-                this.dy = this.dy * -1;
-            }
 
+        ball.collide();
+        ball.move();
+
+        myGameArea.clear();
+
+        rightBar.paint(myGameArea.context);
+        leftBar.paint(myGameArea.context);
+        ball.paint(myGameArea.context);
+        level.paint(myGameArea.context);
+    }
+
+    var keys = {};
+    var onkeydown = onkeyup = function (e) {
+        e = e || event;
+        keys[e.code] = e.type === 'keydown';
+    };
+
+    document.addEventListener('keydown', onkeydown);
+    document.addEventListener('onkeyup', onkeyup);
+
+    function moveRightBarByKeyboard() {
+
+        if (keys["ArrowUp"]) {
+            rightBar.goUp();
         }
-        
-    }
-}
-
-
-function bar(width, height, color, x, y, isLeft) {
-    this.width = width;
-    this.height = height;
-    this.x = x;
-    this.y = y;
-    this.originalHeight = height;
-    this.score = new text("30px", "Consolas", "black", isLeft ? x + 10 : x - 20, 40);
-
-    this.paint = function() {
-        ctx = myGameArea.context;
-        ctx.fillStyle = color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-        this.score.paint();
-
-    }
-
-    this.goUp = function() {
-        if (this.y > 0) {
-            this.y = this.y - 5;
+        if (keys["ArrowDown"]) {
+            rightBar.goDown();
         }
+
     }
 
-    this.goDown = function() {
-        if (this.y < (myGameArea.canvas.height - this.height)) {
-            this.y = this.y + 5;
+    function moveLeftBarByKeyboard() {
+
+        if (keys["KeyW"]) {
+            leftBar.goUp();
         }
+        if (keys["KeyS"]) {
+            leftBar.goDown();
+        }
+
     }
 
-    this.shorten = function() {
-        this.height = this.height * level.barShorteningRate;
+    function moveByComputer() {
+
+        if (ball.dx > 0) {
+            return;
+        }
+
+        if (Math.random() > level.computerStrength) {
+            return;
+        }
+
+        if (ball.y > (leftBar.y + leftBar.height / 2)) {
+            leftBar.goDown();
+        }
+
+        if (ball.y < (leftBar.y + leftBar.height / 2)) {
+            leftBar.goUp();
+        }
+
     }
-
-    this.setOriginalHeight = function() {
-        this.height = this.originalHeight;
-    }
-
-    this.increaseScore = function() {
-        this.score.value++;
-    }
-
-}
-
-function updateGameArea() {
-    
-	if (players == 1) {
-        moveByComputer();
-        moveRightBarByKeyboard();
-    } else {
-        moveRightBarByKeyboard();
-        moveLeftBarByKeyboard();
-    }
-    
-
-    ball.collide();
-    ball.move();
-
-    myGameArea.clear();
-    
-    rightBar.paint();
-    leftBar.paint();
-    ball.paint();
-}
-
-var keys = {};
-var onkeydown = onkeyup = function(e){
-    e = e || event;
-    keys[e.code] = e.type == 'keydown';
-}
-
-document.addEventListener('keydown', onkeydown);
-document.addEventListener('onkeyup', onkeyup);
-
-function moveRightBarByKeyboard() {
-
-    if (keys["ArrowUp"]) {
-        rightBar.goUp();
-    } 
-    if (keys["ArrowDown"]) {
-        rightBar.goDown();
-    } 
-        
-}
-
-function moveLeftBarByKeyboard() {
-
-    if (keys["KeyW"]) {
-        leftBar.goUp();
-    } 
-    if (keys["KeyS"]) {
-        leftBar.goDown();
-    } 
-        
-}
-
-function moveByComputer() {
-
-    if (ball.dx > 0)  {
-        return;
-    }
-    
-    if (Math.random() > level.computerStrength) {
-        return;
-    }
-
-    if (ball.y > (leftBar.y + leftBar.height/2)) {
-        leftBar.goDown();
-    }
-
-    if (ball.y < (leftBar.y + leftBar.height/2)) {
-        leftBar.goUp();
-    }
-    
-}
 
 </script>
 <br>
