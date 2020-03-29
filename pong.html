@@ -421,9 +421,17 @@
     document.addEventListener('keydown', onkeydown);
     document.addEventListener('onkeyup', onkeyup);
 
-    function onMouseDown(type, code) {
-        onkeydown({type: type, code: code})
-    }
+    var lastY = 0;
+    document.addEventListener("touchmove", function (e) {
+        var touch = e.touches[0];
+        var goDown = lastY - touch.clientY < 0;
+        if (goDown) {
+            rightBar.goDown();
+        } else {
+            rightBar.goUp();
+        }
+        lastY = touch.clientY;
+    });
 
     function moveRightBarByKeyboard() {
 
@@ -471,8 +479,5 @@
 
 </script>
 <br/>
-<!--<button style="width: 230px; height: 50px" mousedown="onMouseDown('keydown', 'ArrowUp')" onmouseup="onMouseDown('keyup', 'ArrowUp')">Up</button>
-<button style="width: 230px; height: 50px" onmousedown="onMouseDown('keydown', 'ArrowDown')"  onmouseup="onMouseDown('keyup', 'ArrowDown')">Down</button>
--->
 </body>
 </html>
