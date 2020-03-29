@@ -280,11 +280,13 @@
                     this.setDirection();
                 }
 
-            } else if (this.y - this.radius <= 0) {
+            } else if (this.dy < 0
+                && this.y - this.radius <= 0) {
 
                 this.dy = this.dy * -1;
 
-            } else if (this.y + this.radius >= myGameArea.canvas.height) {
+            } else if (this.dy > 0
+                && this.y + this.radius >= myGameArea.canvas.height) {
 
                 this.dy = this.dy * -1;
                 console.log('ball is at bottom', this.y)
