@@ -385,6 +385,10 @@
 
     function updateGameArea() {
 
+        if (pause) {
+            return;
+        }
+
         if (players === 1) {
             moveByComputer();
             moveRightBarByKeyboard();
@@ -392,7 +396,6 @@
             moveRightBarByKeyboard();
             moveLeftBarByKeyboard();
         }
-
 
         ball.collide();
         ball.move();
@@ -405,10 +408,14 @@
         level.paint(myGameArea.context);
     }
 
+    var pause = false;
     var keys = {};
     var onkeydown = onkeyup = function (e) {
         e = e || event;
         keys[e.code] = e.type === 'keydown';
+        if(e.code === 'Space') {
+            pause = !pause;
+        }
     };
 
     document.addEventListener('keydown', onkeydown);
