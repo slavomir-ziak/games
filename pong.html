@@ -37,10 +37,8 @@
     var level;
 
     function start() {
-
         myGameArea.init();
         myGameArea.choosePlayers();
-
     }
 
     var myGameArea = {
@@ -63,6 +61,7 @@
         startGame: function () {
 
             var width = 10;
+
             leftBar = new bar(10, myGameArea.canvas.height / 4, "black", 0, 100, true);
             rightBar = new bar(10, myGameArea.canvas.height / 4, "black", myGameArea.canvas.width - width, 100, false);
             ball = new ball(5, "#000000", myGameArea.canvas.width / 2, myGameArea.canvas.height / 2);
@@ -72,7 +71,11 @@
         },
 
         choosePlayers: function () {
+
+
+
             // TODO choose human or computer opponent
+
             this.startGame();
         },
 
@@ -81,52 +84,117 @@
     function level(x, y, fontColor, size, font) {
         this.levels = [
             {
-                computerStrength: 0.3,
-                barShorteningRate: 1,
-                barShorteningAfter: 1
+                computerStrength: 0.35,
+                //winningScore: 2
+            },
+            {
+                computerStrength: 0.4,
+                //winningScore: 2
+            },
+            {
+                computerStrength: 0.45,
+                barShorteningRate: 0.9,
             },
             {
                 computerStrength: 0.5,
-                barShorteningRate: 1,
-                barShorteningAfter: 1
+                barShorteningRate: 0.9,
             },
             {
-                computerStrength: 0.7,
-                barShorteningRate: 0.8,
-                barShorteningAfter: 3
+                computerStrength: 0.55,
+                barShorteningRate: 0.85
+            },
+            {
+                computerStrength: 0.6,
+                barShorteningRate: 0.85
+            },
+            {
+                computerStrength: 0.65,
+                barShorteningRate: 0.8
+            },
+            {
+                computerStrength: 0.70,
+                barShorteningRate: 0.7
+            },
+            {
+                computerStrength: 0.75,
+                barShorteningRate: 0.7
+            },
+            {
+                computerStrength: 0.80,
+                barShorteningRate: 0.7
             }
         ];
-        this.level = 0;
-        this.scorePerLevel = 10;
+        this.assignLevelParameters = function () {
+            this.winningScore = this.levels[this.level].winningScore || 5;
+            this.computerStrength = this.levels[this.level].computerStrength || 1;
+            this.barShorteningRate = this.levels[this.level].barShorteningRate || 1;
+        };
+        this.level = 5;
         this.wonTheGame = false;
-        this.computerStrength = this.levels[this.level].computerStrength;
-        this.barShorteningRate = this.levels[this.level].barShorteningRate;
-        this.barShorteningAfter = this.levels[this.level].barShorteningAfter;
+        this.assignLevelParameters();
         this.isAfterLastLevel = function () {
             return this.level >= this.levels.length;
         };
         this.isLastLevel = function () {
             return this.level === this.levels.length - 1;
         };
+
+        this.isEndOfLevel = function(score) {
+            return score === this.winningScore;
+        };
+
         this.scoreChanged = function (score, isLeftPlayer) {
 
-            if (score === this.scorePerLevel) {
+            if (this.wonTheGame) {
+                return;
+            }
+
+            if (this.isEndOfLevel(score)) {
 
                 this.level++;
                 rightBar.resetScore();
                 leftBar.resetScore();
 
-                if (this.isAfterLastLevel()) {
-                    this.wonTheGame = players === 1 && !isLeftPlayer ? "You WON ! ! !" : "You LOST ! ! !";
+                rightBar.setOriginalHeight();
+                leftBar.setOriginalHeight();
+
+                if (isLeftPlayer) {
+                    leftBar.increaseLevelScore();
                 } else {
-                    this.computerStrength = this.levels[this.level].computerStrength;
-                    this.barShorteningRate = this.levels[this.level].barShorteningRate;
-                    this.barShorteningAfter = this.levels[this.level].barShorteningAfter;
+                    rightBar.increaseLevelScore();
+                }
+
+                var isHuman = !isLeftPlayer;
+                var computerWon = players === 1 && !isHuman;
+
+                if (computerWon) {
+                    this.wonTheGame = "You LOST ! ! !";
+                    return;
+                }
+
+                if (this.isAfterLastLevel()) {
+                    if (players === 1) {
+                        this.wonTheGame = "You WON ! ! !";
+                    } else {
+
+                        if (rightBar.levelScore.value === leftBar.levelScore.value) {
+                            return;
+                        }
+
+                        if (rightBar.levelScore.value > leftBar.levelScore.value) {
+                            this.wonTheGame = "Right WON ! ! !"
+                        } else {
+                            this.wonTheGame = "Left WON ! ! !";
+                        }
+                    }
+
+                } else {
+                    this.assignLevelParameters();
                 }
             }
         };
-        this.getLevelLabel = function(){
-            return this.isLastLevel() ? "Last level!" :  "Level: " + (this.level + 1);
+        this.getLevelLabel = function () {
+            return "Level: " + (this.level + 1);
         };
         this.paint = function (paintingContext) {
             paintingContext.font = size + " " + font;
@@ -137,16 +205,6 @@
                 paintingContext.fillText(this.getLevelLabel(), x, y);
             }
 
-        }
-    }
-
-    function text(size, fontColor, color, x, y) {
-        this.value = 0;
-
-        this.paint = function (paintingContext) {
-            paintingContext.font = size + " " + fontColor;
-            paintingContext.fillStyle = color;
-            paintingContext.fillText(this.value, x, y);
         }
     }
 
@@ -163,8 +221,6 @@
             this.y = myGameArea.canvas.height / 2;
             this.dx = 2;
             this.dy = 2;
-            rightBar.setOriginalHeight();
-            leftBar.setOriginalHeight();
         };
 
         this.paint = function (paintingContext) {
@@ -184,12 +240,16 @@
             if (this.x >= myGameArea.canvas.width) {
                 this.restart();
                 leftBar.increaseScore();
+                level.scoreChanged(leftBar.score.value, true);
+                leftBar.shorten();
                 return;
             }
 
             if (this.x <= 0) {
                 this.restart();
                 rightBar.increaseScore();
+                level.scoreChanged(rightBar.score.value, false);
+                rightBar.shorten();
                 return;
             }
 
@@ -204,10 +264,6 @@
                 if (keys["ArrowUp"] || keys["ArrowDown"]) {
                     this.dx--;
                     this.setDirection();
-                    if (this.dx % level.barShorteningAfter === 0) {
-                        rightBar.shorten();
-                    }
-
                 }
 
             }
@@ -222,9 +278,6 @@
                 if (players === 2 && (keys["KeyW"] || keys["KeyS"])) {
                     this.dx++;
                     this.setDirection();
-                    if (this.dx % level.barShorteningAfter === 0) {
-                        leftBar.shorten();
-                    }
                 }
 
             } else if (this.y - this.radius <= 0) {
@@ -263,6 +316,15 @@
         }
     }
 
+    function text(size, fontColor, color, x, y) {
+        this.value = 0;
+
+        this.paint = function (paintingContext) {
+            paintingContext.font = size + " " + fontColor;
+            paintingContext.fillStyle = color;
+            paintingContext.fillText(this.value, x, y);
+        }
+    }
 
     function bar(width, height, color, x, y, isLeft) {
         this.width = width;
@@ -271,11 +333,13 @@
         this.y = y;
         this.originalHeight = height;
         this.score = new text("30px", "Consolas", "black", isLeft ? x + 10 : x - 20, 40);
+        this.levelScore = new text("30px", "Consolas", "black", isLeft ? x + 10 : x - 20, myGameArea.canvas.height - 30);
 
         this.paint = function (paintingContext) {
             paintingContext.fillStyle = color;
             paintingContext.fillRect(this.x, this.y, this.width, this.height);
             this.score.paint(paintingContext);
+            players === 2 && this.levelScore.paint(paintingContext);
 
         };
 
@@ -301,7 +365,10 @@
 
         this.increaseScore = function () {
             this.score.value++;
-            level.scoreChanged(this.score.value, isLeft);
+        };
+
+        this.increaseLevelScore = function () {
+            this.levelScore.value++;
         };
 
         this.resetScore = function () {
