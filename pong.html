@@ -45,6 +45,8 @@
 
         canvas: document.createElement("canvas"),
 
+        controller: new controller(),
+
         init: function () {
             this.canvas.width = 480;
             this.canvas.height = 270;
@@ -261,7 +263,7 @@
 
                 this.dx = this.dx * -1;
 
-                if (keys["ArrowUp"] || keys["ArrowDown"]) {
+                if (myGameArea.controller.keys["ArrowUp"] || myGameArea.controller.keys["ArrowDown"]) {
                     this.dx--;
                     this.setDirection();
                 }
@@ -275,7 +277,7 @@
 
                 this.dx = this.dx * -1;
 
-                if (players === 2 && (keys["KeyW"] || keys["KeyS"])) {
+                if (players === 2 && (myGameArea.controller.keys["KeyW"] || myGameArea.controller.keys["KeyS"])) {
                     this.dx++;
                     this.setDirection();
                 }
@@ -309,11 +311,11 @@
             }
 
             if (Math.random() > 0.2) {
-                if (this.dy > 0 && keys["ArrowUp"]) {
+                if (this.dy > 0 && myGameArea.controller.keys["ArrowUp"]) {
                     this.dy = this.dy * -1;
 
                 }
-                if (this.dy < 0 && keys["ArrowDown"]) {
+                if (this.dy < 0 && myGameArea.controller.keys["ArrowDown"]) {
                     this.dy = this.dy * -1;
                 }
 
@@ -385,7 +387,7 @@
 
     function updateGameArea() {
 
-        if (pause) {
+        if (myGameArea.controller.pause) {
             return;
         }
 
@@ -408,37 +410,66 @@
         level.paint(myGameArea.context);
     }
 
-    var pause = false;
-    var keys = {};
-    var onkeydown = onkeyup = function (e) {
-        e = e || event;
-        keys[e.code] = e.type === 'keydown';
-        if(e.code === 'Space') {
-            pause = !pause;
-        }
-    };
+    function controller() {
+        this.keys = {};
+        this.pause = false;
+        var self = this;
+        var onkeydown = onkeyup = function (e) {
+            e = e || event;
+            self.keys[e.code] = e.type === 'keydown';
 
-    document.addEventListener('keydown', onkeydown);
-    document.addEventListener('onkeyup', onkeyup);
+            if(e.code === 'Space') {
+                self.pause = !self.pause;
+            }
+        };
 
-    var lastY = 0;
-    document.addEventListener("touchmove", function (e) {
-        var touch = e.touches[0];
-        var goDown = lastY - touch.clientY < 0;
-        if (goDown) {
-            rightBar.goDown();
-        } else {
-            rightBar.goUp();
-        }
-        lastY = touch.clientY;
-    });
+        document.addEventListener('keydown', onkeydown);
+        document.addEventListener('onkeyup', onkeyup);
+
+        this.lastY = 0;
+        var touchend = function (e) {
+
+            var touchend = e.type === 'touchend';
+            if (touchend) {
+                self.keys.ArrowDown = null;
+                self.keys.ArrowUp = null;
+            }
+
+        };
+        document.addEventListener('touchend', touchend);
+        document.addEventListener("touchmove", function (e) {
+
+            var touch = e.touches[0];
+
+            var diff = self.lastY - touch.clientY;
+
+            if (Math.abs(diff) < 3) {
+                self.keys.ArrowDown = null;
+                self.keys.ArrowUp = null;
+                return;
+            }
+            self.lastY = touch.clientY;
+            var touchDirection = diff < 0 ? 'down' : 'up';
+
+            if (touchDirection === 'up' ) {
+                self.keys.ArrowUp = true;
+                self.keys.ArrowDown = false;
+            } else if (touchDirection === 'down') {
+                self.keys.ArrowDown = true;
+                self.keys.ArrowUp = false;
+            }
+
+        });
+
+    }
+
 
     function moveRightBarByKeyboard() {
 
-        if (keys["ArrowUp"]) {
+        if (myGameArea.controller.keys["ArrowUp"]) {
             rightBar.goUp();
         }
-        if (keys["ArrowDown"]) {
+        if (myGameArea.controller.keys["ArrowDown"]) {
             rightBar.goDown();
         }
 
@@ -446,10 +477,10 @@
 
     function moveLeftBarByKeyboard() {
 
-        if (keys["KeyW"]) {
+        if (myGameArea.controller.keys["KeyW"]) {
             leftBar.goUp();
         }
-        if (keys["KeyS"]) {
+        if (myGameArea.controller.keys["KeyS"]) {
             leftBar.goDown();
         }
 
