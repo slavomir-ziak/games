@@ -439,6 +439,8 @@
         };
         var touchmove = function (e) {
 
+            e.preventDefault();
+            e.stopPropagation();
             var touch = e.touches[0];
             var diff = self.lastY - touch.clientY;
             self.lastY = touch.clientY;
