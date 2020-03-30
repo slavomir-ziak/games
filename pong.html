@@ -262,7 +262,7 @@
 
                 this.dx = this.dx * -1;
 
-                if (myGameArea.controller.keys["ArrowUp"] || myGameArea.controller.keys["ArrowDown"]) {
+                if (myGameArea.controller.moving) {
                     this.dx--;
                     this.setDirection();
                 }
@@ -276,7 +276,7 @@
 
                 this.dx = this.dx * -1;
 
-                if (players === 2 && (myGameArea.controller.keys["KeyW"] || myGameArea.controller.keys["KeyS"])) {
+                if (players === 2 && myGameArea.controller.moving) {
                     this.dx++;
                     this.setDirection();
                 }
@@ -423,23 +423,25 @@
         this.keys = {};
         this.pause = false;
         this.lastY = 0;
+        this.moving = false;
         var self = this;
         var onkeydown = onkeyup = function (e) {
             e = e || event;
-            self.keys[e.code] = e.type === 'keydown';
+            self.moving = self.keys[e.code] = e.type === 'keydown';
 
             if (e.code === 'Space') {
                 self.pause = !self.pause;
             }
         };
-
         var touchstart = function (e) {
             var touch = e.touches[0];
             self.lastY = touch.clientY;
+            self.moving = true;
+        };
+        var touchend = function (e) {
+            self.moving = false;
         };
         var touchmove = function (e) {
-
-            e.preventDefault();
             e.stopPropagation();
             var touch = e.touches[0];
             var diff = self.lastY - touch.clientY;
@@ -450,7 +452,9 @@
 
         document.addEventListener('keydown', onkeydown);
         document.addEventListener('onkeyup', onkeyup);
+
         document.addEventListener('touchstart', touchstart);
+        document.addEventListener('touchend', touchend);
         document.addEventListener("touchmove", touchmove);
 
     }
