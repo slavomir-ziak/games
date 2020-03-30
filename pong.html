@@ -310,11 +310,11 @@
             }
 
             if (Math.random() > 0.2) {
-                if (this.dy > 0 && myGameArea.controller.keys["ArrowUp"]) {
+                if (this.dy > 0 && myGameArea.controller.movingDirection === 'up') {
                     this.dy = this.dy * -1;
 
                 }
-                if (this.dy < 0 && myGameArea.controller.keys["ArrowDown"]) {
+                if (this.dy < 0 && myGameArea.controller.movingDirection === 'down') {
                     this.dy = this.dy * -1;
                 }
 
@@ -424,10 +424,19 @@
         this.pause = false;
         this.lastY = 0;
         this.moving = false;
+        this.movingDirection = false;
         var self = this;
         var onkeydown = onkeyup = function (e) {
             e = e || event;
             self.moving = self.keys[e.code] = e.type === 'keydown';
+
+            if (e.code === 'ArrowUp') {
+                self.movingDirection = 'up';
+            } else if (e.code === 'ArrowDown') {
+                self.movingDirection = 'down';
+            } else {
+                self.movingDirection = false;
+            }
 
             if (e.code === 'Space') {
                 self.pause = !self.pause;
@@ -437,9 +446,11 @@
             var touch = e.touches[0];
             self.lastY = touch.clientY;
             self.moving = true;
+            self.movingDirection = false;
         };
         var touchend = function (e) {
             self.moving = false;
+            self.movingDirection = false;
         };
         var touchmove = function (e) {
             e.stopPropagation();
@@ -447,6 +458,7 @@
             var diff = self.lastY - touch.clientY;
             self.lastY = touch.clientY;
             rightBar.setDiff(diff * -1);
+            self.movingDirection = diff < 0 ? 'down' : 'up';
 
         };
 
