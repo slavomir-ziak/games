@@ -75,7 +75,6 @@
         choosePlayers: function () {
 
 
-
             // TODO choose human or computer opponent
 
             this.startGame();
@@ -141,7 +140,7 @@
             return this.level === this.levels.length - 1;
         };
 
-        this.isEndOfLevel = function(score) {
+        this.isEndOfLevel = function (score) {
             return score === this.winningScore;
         };
 
@@ -339,7 +338,9 @@
         this.height = height;
         this.x = x;
         this.y = y;
+        this.step = 5;
         this.originalHeight = height;
+        this.lowestYPoint = myGameArea.canvas.height - this.height;
         this.score = new text("30px", "Consolas", "black", isLeft ? x + 10 : x - 20, 40);
         this.levelScore = new text("30px", "Consolas", "black", isLeft ? x + 10 : x - 20, myGameArea.canvas.height - 30);
 
@@ -352,15 +353,23 @@
         };
 
         this.goUp = function () {
-            if (this.y > 0) {
-                this.y = this.y - 5;
+            if (this.y > this.step) {
+                this.y = this.y - this.step;
             }
         };
 
         this.goDown = function () {
-            if (this.y < (myGameArea.canvas.height - this.height)) {
-                this.y = this.y + 5;
+            if (this.y + this.step < this.lowestYPoint) {
+                this.y = this.y + this.step;
             }
+        };
+
+        this.setDiff = function (diff) {
+            var nextY = this.y + diff;
+            if (nextY < 0 || nextY > this.lowestYPoint) {
+                return;
+            }
+            this.y = this.y + diff;
         };
 
         this.shorten = function () {
@@ -413,53 +422,34 @@
     function controller() {
         this.keys = {};
         this.pause = false;
+        this.lastY = 0;
         var self = this;
         var onkeydown = onkeyup = function (e) {
             e = e || event;
             self.keys[e.code] = e.type === 'keydown';
 
-            if(e.code === 'Space') {
+            if (e.code === 'Space') {
                 self.pause = !self.pause;
             }
         };
 
-        document.addEventListener('keydown', onkeydown);
-        document.addEventListener('onkeyup', onkeyup);
-
-        this.lastY = 0;
-        var touchend = function (e) {
-
-            var touchend = e.type === 'touchend';
-            if (touchend) {
-                self.keys.ArrowDown = null;
-                self.keys.ArrowUp = null;
-            }
-
+        var touchstart = function (e) {
+            var touch = e.touches[0];
+            self.lastY = touch.clientY;
         };
-        document.addEventListener('touchend', touchend);
-        document.addEventListener("touchmove", function (e) {
+        var touchmove = function (e) {
 
             var touch = e.touches[0];
-
             var diff = self.lastY - touch.clientY;
-
-            if (Math.abs(diff) < 3) {
-                self.keys.ArrowDown = null;
-                self.keys.ArrowUp = null;
-                return;
-            }
             self.lastY = touch.clientY;
-            var touchDirection = diff < 0 ? 'down' : 'up';
+            rightBar.setDiff(diff * -1);
 
-            if (touchDirection === 'up' ) {
-                self.keys.ArrowUp = true;
-                self.keys.ArrowDown = false;
-            } else if (touchDirection === 'down') {
-                self.keys.ArrowDown = true;
-                self.keys.ArrowUp = false;
-            }
+        };
 
-        });
+        document.addEventListener('keydown', onkeydown);
+        document.addEventListener('onkeyup', onkeyup);
+        document.addEventListener('touchstart', touchstart);
+        document.addEventListener("touchmove", touchmove);
 
     }
 
@@ -505,7 +495,6 @@
         }
 
     }
-
 
 
 </script>
