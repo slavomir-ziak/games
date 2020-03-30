@@ -340,7 +340,6 @@
         this.y = y;
         this.step = 5;
         this.originalHeight = height;
-        this.lowestYPoint = myGameArea.canvas.height - this.height;
         this.score = new text("30px", "Consolas", "black", isLeft ? x + 10 : x - 20, 40);
         this.levelScore = new text("30px", "Consolas", "black", isLeft ? x + 10 : x - 20, myGameArea.canvas.height - 30);
 
@@ -359,14 +358,16 @@
         };
 
         this.goDown = function () {
-            if (this.y + this.step < this.lowestYPoint) {
+            var lowestYPoint = myGameArea.canvas.height - this.height;
+            if (this.y + this.step < lowestYPoint) {
                 this.y = this.y + this.step;
             }
         };
 
         this.setDiff = function (diff) {
             var nextY = this.y + diff;
-            if (nextY < 0 || nextY > this.lowestYPoint) {
+            var lowestYPoint = myGameArea.canvas.height - this.height;
+            if (nextY < 0 || nextY > lowestYPoint) {
                 return;
             }
             this.y = this.y + diff;
