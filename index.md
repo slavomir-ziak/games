@@ -1,2 +1,1 @@
-asdf
-[Pong](./pong.html)
+[Pong](pong-server/index.html)
